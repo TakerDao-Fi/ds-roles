@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // roles.sol - roled based authentication
 
 // Copyright (C) 2017  DappHub, LLC
@@ -15,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity >=0.4.23;
+pragma solidity >=0.6.12;
 
 import 'ds-auth/auth.sol';
 
@@ -26,53 +28,29 @@ contract DSRoles is DSAuth, DSAuthority
     mapping(address=>mapping(bytes4=>bytes32)) _capability_roles;
     mapping(address=>mapping(bytes4=>bool)) _public_capabilities;
 
-    function getUserRoles(address who)
-        public
-        view
-        returns (bytes32)
-    {
+    function getUserRoles(address who) public view returns (bytes32) {
         return _user_roles[who];
     }
 
-    function getCapabilityRoles(address code, bytes4 sig)
-        public
-        view
-        returns (bytes32)
-    {
+    function getCapabilityRoles(address code, bytes4 sig) public view returns (bytes32) {
         return _capability_roles[code][sig];
     }
 
-    function isUserRoot(address who)
-        public
-        view
-        returns (bool)
-    {
+    function isUserRoot(address who) public virtual view returns (bool) {
         return _root_users[who];
     }
 
-    function isCapabilityPublic(address code, bytes4 sig)
-        public
-        view
-        returns (bool)
-    {
+    function isCapabilityPublic(address code, bytes4 sig) public view returns (bool) {
         return _public_capabilities[code][sig];
     }
 
-    function hasUserRole(address who, uint8 role)
-        public
-        view
-        returns (bool)
-    {
+    function hasUserRole(address who, uint8 role) public view returns (bool) {
         bytes32 roles = getUserRoles(who);
         bytes32 shifted = bytes32(uint256(uint256(2) ** uint256(role)));
         return bytes32(0) != roles & shifted;
     }
 
-    function canCall(address caller, address code, bytes4 sig)
-        public
-        view
-        returns (bool)
-    {
+    function canCall(address caller, address code, bytes4 sig) override public view returns (bool) {
         if( isUserRoot(caller) || isCapabilityPublic(code, sig) ) {
             return true;
         } else {
@@ -86,16 +64,11 @@ contract DSRoles is DSAuth, DSAuthority
         return (input ^ bytes32(uint(-1)));
     }
 
-    function setRootUser(address who, bool enabled)
-        public
-        auth
-    {
+    function setRootUser(address who, bool enabled) public virtual auth {
         _root_users[who] = enabled;
     }
 
-    function setUserRole(address who, uint8 role, bool enabled)
-        public
-        auth
+    function setUserRole(address who, uint8 role, bool enabled) public auth
     {
         bytes32 last_roles = _user_roles[who];
         bytes32 shifted = bytes32(uint256(uint256(2) ** uint256(role)));
@@ -106,17 +79,11 @@ contract DSRoles is DSAuth, DSAuthority
         }
     }
 
-    function setPublicCapability(address code, bytes4 sig, bool enabled)
-        public
-        auth
-    {
+    function setPublicCapability(address code, bytes4 sig, bool enabled) public auth {
         _public_capabilities[code][sig] = enabled;
     }
 
-    function setRoleCapability(uint8 role, address code, bytes4 sig, bool enabled)
-        public
-        auth
-    {
+    function setRoleCapability(uint8 role, address code, bytes4 sig, bool enabled) public auth {
         bytes32 last_roles = _capability_roles[code][sig];
         bytes32 shifted = bytes32(uint256(uint256(2) ** uint256(role)));
         if( enabled ) {
@@ -124,7 +91,5 @@ contract DSRoles is DSAuth, DSAuthority
         } else {
             _capability_roles[code][sig] = last_roles & BITNOT(shifted);
         }
-
     }
-
 }
